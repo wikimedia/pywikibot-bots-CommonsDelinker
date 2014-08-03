@@ -32,18 +32,24 @@ Returns the time in seconds since the latest known edit of dbname.
 """
 #
 # (C) Bryan Tong Minh, 2007
+# (C) Pywikibot team, 2014-2016
 #
 # Distributed under the terms of the MIT license.
 #
+from __future__ import absolute_import, unicode_literals
 __version__ = '$Id: checkusage.py 11540 2013-05-17 17:23:42Z drtrigon $'
 #
 
-import httplib, urlparse, socket, time
+import httplib
+import json
+import socket
+import time
+import urlparse
 from urllib import urlencode
 
-import wikipedia, family
+import pywikibot
+from pywikibot.data import api
 
-import simplejson   # after 'wikipedia' because of externals path
 
 try:
     import MySQLdb
@@ -141,14 +147,14 @@ class HTTP(object):
             self._conn.close()
             self.__init__(self.host)
         try:
-            data = simplejson.load(res)
+            data = json.load(res)
         finally:
             res.close()
 
         if 'error' in data:
             if data['error']['code'] == u'internal_api_error_DBConnectionError':
                 return self.query_api(host, path, **kwargs)
-            raise wikipedia.Error(data['error']['code'],
+            raise api.APIError(data['error']['code'],
                 data['error']['info'])
 
         return data
@@ -270,7 +276,7 @@ class CheckUsage(object):
             try:
                 lang, fam = family(domain)
                 if fam not in self.known_families:
-                    self.known_families[fam] = wikipedia.Family(fam, fatal = False)
+                    self.known_families[fam] = pywikibot.site.Family(fam, fatal=False)
             except (RuntimeError, ValueError, SyntaxError):
                 self.unknown_families.append(domain)
             else:
@@ -324,6 +330,7 @@ class CheckUsage(object):
         for page_namespace, page_title in self.databases[dbname][1]:
             stripped_title = page_title.decode('utf-8', 'ignore')
             if page_namespace != 0:
+                # FIXME Family.namespace doesn't exist in core
                 title = family.namespace(lang, page_namespace) + u':' + stripped_title
             else:
                 title = stripped_title

@@ -19,13 +19,13 @@ Please refer to delinker.txt for full documentation.
 # (C) Kyle/Orgullomoore, 2006-2007
 # (C) Siebrand Mazeland, 2006-2007
 # (C) Bryan Tong Minh, 2007-2008, 2012
+# (C) Pywikibot team, 2014-2016
 #
 # Distributed under the terms of the MIT license.
 #
+from __future__ import absolute_import, unicode_literals
 __version__ = '$Id$'
-# This script requires MySQLdb and simplejson. Tested with:
-# * Python 2.4.4, MySQLdb 1.2.1_p, simplejson 1.3
-# * Python 2.5, MySQLdb 1.2.2, simplejson 1.5 (recommended)
+# This script requires MySQLdb
 # TODO:
 # * Don't replace within <nowiki /> tags
 # * Make as many config settings site dependend
@@ -37,16 +37,19 @@ __version__ = '$Id$'
 # before_delink, simple_replace, gallery_replace, complex_replace, before_save,
 # after_delink
 
-import sys, os, threading, time
+import cgitb
+import os
+import re
+import sys
+import time
 import traceback
-import re, cgitb
 import threading
-
 import threadpool
-import checkusage
 
-import wikipedia
-import config
+import pywikibot
+from pywikibot import config
+
+import checkusage
 
 # FIXME: They should be defined *somewhere* in the Python library, not?
 WHITESPACE = u' \r\n\t\u200e\u200f\u202a\u202a\u202b\u202c\u202d\u202e'
@@ -137,9 +140,9 @@ class Delinker(threadpool.Thread):
                         try:
                             try:
                                 result = self.replace_image(image, site, title, summary, replacement)
-                            except wikipedia.UserBlocked, e:
+                            except pywikibot.UserBlocked, e:
                                 output(u'Warning! Blocked %s.' % tuple(e))
-                            except wikipedia.CaptchaError, e:
+                            except pywikibot.CaptchaError, e:
                                 output(u'%s Warning! Captcha encountered at %s.' % (self, site))
                                 if (lang, family) not in skipped_images:
                                     skipped_images[(lang, family)] = []
@@ -173,14 +176,14 @@ class Delinker(threadpool.Thread):
         """ The actual replacement. Giving None as argument for replacement
         will delink instead of replace."""
 
-        page = wikipedia.Page(site, page_title)
+        page = pywikibot.Page(site, page_title)
         hook = None
 
         # TODO: Per site config.
         if page.namespace() in self.CommonsDelinker.config['delink_namespaces']:
             try:
                 text = page.get(get_redirect = True)
-            except wikipedia.NoPage:
+            except pywikibot.NoPage:
                 return 'failed'
             new_text = text
 
@@ -314,17 +317,18 @@ class Delinker(threadpool.Thread):
                                 'commons') == 'CommonsDelinker')):
                             page.put(new_text.get(), m_summary.get())
                         return 'ok'
-                    except wikipedia.ServerError, e:
+                    except pywikibot.ServerError, e:
                         output(u'Warning! ServerError: %s' % str(e))
-                    except wikipedia.EditConflict:
+                    except pywikibot.EditConflict:
                         # Try again
                         output(u'Got EditConflict trying to remove %s from %s:%s.' % \
                             (image, site, page_title))
                         return self.replace_image(image, site, page_title, summary, replacement = None)
-                    except wikipedia.PageNotSaved:
-                        if is_retry: return 'failed'
+                    except pywikibot.PageSaveRelatedError:
+                        if is_retry:
+                            return 'failed'
                         is_retry = True
-                    except wikipedia.LockedPage:
+                    except pywikibot.LockedPage:
                         return 'failed'
                     output(u'Retrying...')
             else:
@@ -391,14 +395,14 @@ class SummaryCache(object):
             # FIXME: evil
             if self.CommonsDelinker.config['global']:
                 self.check_user_page(site)
-            page = wikipedia.Page(site, '%s%s' % \
+            page = pywikibot.Page(site, '%s%s' % \
                 (self.CommonsDelinker.config['local_settings'], type))
             try:
                 # Fetch the summary template, follow redirects
                 i18n = page.get(get_redirect = True)
                 self.summaries[type][key] = (i18n, time.time())
                 return i18n
-            except wikipedia.NoPage:
+            except pywikibot.NoPage:
                 pass
         finally:
             self.lock.release()
@@ -417,7 +421,7 @@ class SummaryCache(object):
                     'wikisource', 'wikinews', 'wikiversity'):
                 if site.lang in config.usernames['wikipedia']:
                     newsite = self.CommonsDelinker.get_site(site.lang,
-                        wikipedia.Family('wikipedia'))
+                        'wikipedia')
                     return self.get(newsite, type, key = key)
         return self.CommonsDelinker.config['default_settings'].get(type, '')
 
@@ -437,7 +441,7 @@ class SummaryCache(object):
             if not '#' + str(site) in ftxt:
                 username = config.usernames[site.family.name][site.lang]
 
-                userpage = wikipedia.Page(site, 'User:' + username)
+                userpage = pywikibot.Page(site, 'User:' + username)
                 # Removed check for page existence. If it is not in our
                 # database we can safely assume that we have no user page
                 # there. In case there is, we will just overwrite it once.
@@ -449,7 +453,7 @@ class SummaryCache(object):
                 f = open(filename, 'a')
                 f.write('#' + str(site))
                 f.close()
-        except wikipedia.LockedPage:
+        except pywikibot.LockedPage:
             # User page is protected, continue anyway
             pass
 
@@ -654,7 +658,7 @@ class Logger(threadpool.Thread):
 class CommonsDelinker(object):
     def __init__(self):
         self.config = config.CommonsDelinker
-        self.site = wikipedia.getSite()
+        self.site = pywikibot.Site()
         self.site.forceLogin()
 
         # Initialize workers
@@ -765,6 +769,7 @@ class CommonsDelinker(object):
 
     def get_site(self, code, fam):
         # Threadsafe replacement of wikipedia.getSite
+        # TODO is this still needed?
         key = '%s:%s' % (code, fam)
         self.siteLock.acquire()
         try:
@@ -776,8 +781,8 @@ class CommonsDelinker(object):
                     self.sites[key][self.sites[key].index((site, False))] = (site, True)
                     return site
             try:
-                site = wikipedia.getSite(code, fam)
-            except wikipedia.NoSuchSite:
+                site = pywikibot.Site(code, fam)
+            except pywikibot.NoSuchSite:
                 site = False
             self.sites[key].append((site, True))
             return site
@@ -915,9 +920,9 @@ class CommonsDelinker(object):
     def output(*args):
         return output(*args)
 
-def output(message, toStdout = True):
+def output(message, toStdout=True):
     message = time.strftime('[%Y-%m-%d %H:%M:%S] ') + message
-    wikipedia.output(message, toStdout = toStdout)
+    pywikibot.output(message, toStdout=toStdout)
     if toStdout:
         sys.stdout.flush()
     else:
@@ -931,7 +936,7 @@ def main():
 
     re._MAXCACHE = 4
 
-    args = wikipedia.handleArgs()
+    args = pywikibot.handle_args()
     if '-since' in args:
         # NOTE: Untested
         ts_format = '%Y-%m-%d %H:%M:%S'
@@ -961,7 +966,7 @@ def main():
                 threadpool.terminate()
     finally:
         output(u'Stopping CommonsDelinker')
-        wikipedia.stopme()
+        pywikibot.stopme()
         # Flush the standard streams
         sys.stdout.flush()
         sys.stderr.flush()

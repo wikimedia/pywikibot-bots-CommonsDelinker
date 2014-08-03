@@ -6,17 +6,26 @@ Please refer to delinker.txt for full documentation.
 #
 #
 # (C) Bryan Tong Minh, 2007
+# (C) Pywikibot team, 2014-2016
 #
 # Distributed under the terms of the MIT license.
 #
+from __future__ import absolute_import, unicode_literals
 __version__ = '$Id: image_replacer.py 11540 2013-05-17 17:23:42Z drtrigon $'
-import config, wikipedia
-import simplejson   # after 'wikipedia' because of externals path
-import re, time
-import sys, os, signal, traceback
+#
+import json
+import os
+import re
+import signal
+import sys
+import time
+import traceback
 
-from delinker import wait_callback, output, connect_database
+import pywikibot
+from pywikibot import config
+
 from checkusage import family
+from delinker import wait_callback, output, connect_database
 
 def mw_timestamp(ts):
     return '%s%s%s%s-%s%s-%s%sT%s%s:%s%s:%s%sZ' % tuple(ts)
@@ -46,7 +55,7 @@ class Replacer(object):
         self.disallowed_replacements = [(re.compile(i[0], re.I), re.compile(i[1], re.I))
             for i in self.config.get('disallowed_replacements', ())]
 
-        self.site = wikipedia.getSite()
+        self.site = pywikibot.Site()
         self.site.forceLogin()
 
         self.database = connect_database()
@@ -67,7 +76,7 @@ class Replacer(object):
             status, user, comment) VALUES (%%s, %%s, %%s,
             'pending', %%s, %%s)""" % self.config['replacer_table']
 
-        page = wikipedia.Page(self.site, self.config['command_page'])
+        page = pywikibot.Page(self.site, self.config['command_page'])
 
         # Get last revision date
         if self.cursor.execute("""SELECT timestamp FROM %s
@@ -142,7 +151,7 @@ class Replacer(object):
                     # Save the page
                     page.put(text.strip(), comment = 'Removing images being processed')
                     return
-                except wikipedia.EditConflict:
+                except pywikibot.EditConflict:
                     # Try again
                     text = page.get()
 
@@ -163,7 +172,7 @@ class Replacer(object):
         if since:
             predata.append(('rvend', since))
         response, data = self.site.postForm(address, predata)
-        data = simplejson.loads(data)
+        data = json.loads(data)
         if 'error' in data:
             raise RuntimeError(data['error'])
 
@@ -254,7 +263,7 @@ class Replacer(object):
         not_ok_items = []
         for wiki, namespace, page_title in not_ok:
             # Threadsafety?
-            site = wikipedia.getSite(*family(wiki))
+            site = pywikibot.Site(*family(wiki))
             namespace_name = site.namespace(namespace)
             if namespace_name:
                 namespace_name = namespace_name + u':'
@@ -273,23 +282,23 @@ class Replacer(object):
             (self.config['replacer_report_template'],
             new_image, user, comment,
             self.config.get('replacer_report_seperator', u', ').join(not_ok_items))
-        page = wikipedia.Page(self.site, u'Image:' + old_image)
+        page = pywikibot.Page(self.site, u'Image:' + old_image)
 
         try:
             text = page.get()
-        except wikipedia.NoPage:
+        except pywikibot.NoPage:
             output(u'Warning! Unable to report replacement to %s. Page does not exist!' % old_image)
             return
-        except wikipedia.IsRedirectPage:
+        except pywikibot.IsRedirectPage:
             output(u'Warning! %s is a redirect; not reporting replacement!' % old_image)
             return
         try:
             page.put(u'%s\n%s' % (template, text),
                 comment = u'This image has been replaced by ' + new_image)
-        except wikipedia.PageNotSaved, e:
+        except pywikibot.PageNotSaved, e:
             output(u'Warning! Unable to report replacement to %s.' % old_image, False)
             output('%s: %s' % (e.__class__.__name__, str(e)), False)
-        except wikipedia.ServerError, e:
+        except pywikibot.ServerError, e:
             output(u'Warning! Server error while reporting replacement to %s.' % old_image, False)
             output('%s: %s' % (e.__class__.__name__, str(e)), False)
             return self.report((old_image, new_image, user, comment, not_ok))
@@ -302,7 +311,7 @@ def main():
     global R
 
     import sys, traceback
-    wikipedia.handleArgs()
+    pywikibot.handleArgs()
     output(u'Running ' + __version__)
 
     try:
@@ -318,6 +327,6 @@ def main():
             traceback.print_exc(file = sys.stderr)
     finally:
         output('Exitting replacer')
-        wikipedia.stopme()
+        pywikibot.stopme()
 
 if __name__ == '__main__': main()
