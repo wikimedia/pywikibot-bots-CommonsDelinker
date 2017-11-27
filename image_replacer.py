@@ -316,7 +316,8 @@ class Replacer(object):
 def main():
     global R
 
-    import sys, traceback
+    import sys
+    import traceback
     pywikibot.handleArgs()
     output(u'Running ' + __version__)
 

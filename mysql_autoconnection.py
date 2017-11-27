@@ -11,7 +11,8 @@ reconnect them.
 #
 __version__ = '$Id: mysql_autoconnection.py 7588 2009-11-03 20:36:09Z btongminh $'
 
-import MySQLdb, MySQLdb.cursors
+import MySQLdb
+import MySQLdb.cursors
 import time
 
 

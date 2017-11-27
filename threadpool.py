@@ -22,10 +22,12 @@ may cause thread unsafety!
 #
 # Distributed under the terms of the MIT license.
 #
-__version__ = '$Id: threadpool.py 10816 2012-12-23 17:07:01Z btongminh $'
-#
 
-import sys, threading, os
+import os
+import sys
+import threading
+
+__version__ = '$Id: threadpool.py 10816 2012-12-23 17:07:01Z btongminh $'
 
 
 class ThreadPool(dict):
