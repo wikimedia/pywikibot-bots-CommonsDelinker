@@ -61,15 +61,19 @@ except ImportError:
     pass
 __ver__ = '0.4c'
 
+
 def strip_ns(title):
     title = title.replace(' ', '_')
     if title.find(':') != -1:
         return title[title.find(':') + 1:]
     return title
+
+
 def strip_image(title):
     if title.startswith('Image:'):
         return strip_ns(title)
     return title
+
 
 def family(domain):
     if domain is None:
@@ -90,6 +94,7 @@ def family(domain):
     if domain == 'wikisource.org':
         return '-', 'wikisource'
     raise RuntimeError('Unknown family ' + domain)
+
 
 # Not sure whether this belongs here
 class HTTP(object):
@@ -158,8 +163,10 @@ class HTTP(object):
                 data['error']['info'])
 
         return data
+
     def close(self):
         self._conn.close()
+
 
 class HTTPPool(list):
     def __init__(self, retry_timeout = 10, max_retries = -1,
@@ -186,7 +193,6 @@ class HTTPPool(list):
                 self.remove(conn)
                 self.wait()
                 conn = self.find_conn(host)
-
 
     def find_conn(self, host):
         for conn in self:
@@ -285,7 +291,6 @@ class CheckUsage(object):
 
             self.domains[dbname] = domain
 
-
     def connect_mysql(self, host):
         # A bug in MySQLdb 1.2.1_p will force you to set
         # all your connections to use_unicode = False.
@@ -303,6 +308,7 @@ class CheckUsage(object):
         cursor = database.cursor()
         self.connections.append((database, cursor))
         return database, cursor
+
     def connect_http(self):
         if not self.http:
             self.http = HTTPPool(retry_timeout = self.http_retry_timeout,
@@ -372,7 +378,6 @@ class CheckUsage(object):
             else:
                 return
 
-
     def get_usage_live(self, site, image, shared = False):
         self.connect_http()
 
@@ -410,7 +415,6 @@ class CheckUsage(object):
                 stripped_title = title
             yield namespace, stripped_title, title
 
-
     def exists(self, site, image):
         self.connect_http()
         # Check whether the image still is deleted on Commons.
@@ -431,4 +435,3 @@ class CheckUsage(object):
                 connection.close()
             except:
                 pass
-

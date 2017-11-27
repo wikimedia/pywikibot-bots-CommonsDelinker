@@ -27,17 +27,24 @@ from pywikibot import config
 from checkusage import family
 from delinker import wait_callback, output, connect_database
 
+DB_TS = re.compile('[^0-9]')
+IMG_NS = re.compile(r'(?i)^\s*File\:')
+
+
 def mw_timestamp(ts):
     return '%s%s%s%s-%s%s-%s%sT%s%s:%s%s:%s%sZ' % tuple(ts)
-DB_TS = re.compile('[^0-9]')
+
+
 def db_timestamp(ts):
     return DB_TS.sub('', ts)
-IMG_NS = re.compile(r'(?i)^\s*File\:')
+
+
 def strip_image(img):
     img = IMG_NS.sub('', img)
     img = img.replace(' ', '_')
     img = img[0].upper() + img[1:]
     return img.strip()
+
 
 def site_prefix(site):
     if site.lang == site.family.name:
@@ -45,6 +52,7 @@ def site_prefix(site):
     if (site.lang, site.family.name) == ('-', 'wikisource'):
         return 'oldwikisource'
     return '%s:%s' % (site.family.name, site.lang)
+
 
 class Replacer(object):
     def __init__(self):
@@ -66,7 +74,6 @@ class Replacer(object):
             self.reporters = []
         else:
             self.reporters = None
-
 
     def read_replace_log(self):
         """ The actual worker method """
@@ -225,7 +232,6 @@ class Replacer(object):
                 user.decode('utf-8', 'ignore'),
                 comment.decode('utf-8', 'ignore'), not_ok))
 
-
     def start(self):
         if self.config.get('replacer_run_once', False):
             self.run_once()
@@ -328,5 +334,6 @@ def main():
     finally:
         output('Exitting replacer')
         pywikibot.stopme()
+
 
 if __name__ == '__main__': main()

@@ -2,11 +2,14 @@ __version__ = '$Id: replace_with_dummy.py 7129 2009-08-07 17:25:10Z siebrand $'
 
 import re
 
+
 class DummyReplacement(object):
     # only overrides delinks inside <gallery> tags.
     hook = 'gallery_replace'
+
     def __init__(self, CommonsDelinker):
         self.CommonsDelinker = CommonsDelinker
+
     def __call__(self, page, summary, image, replacement, match, groups):
         site = page.site()
         if (site.lang, site.family.name) == ('nl', 'wikipedia') and replacement.get() is None:

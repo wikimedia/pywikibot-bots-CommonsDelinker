@@ -27,8 +27,10 @@ __version__ = '$Id: threadpool.py 10816 2012-12-23 17:07:01Z btongminh $'
 
 import sys, threading, os
 
+
 class ThreadPool(dict):
     pools = []
+
     def __init__(self, worker, max_threads, *args, **kwargs):
         dict.__init__(self)
 
@@ -76,6 +78,7 @@ class ThreadPool(dict):
         for thread in self.threads:
             if not thread.isAlive():
                 thread.start()
+
     def exit(self):
         self.jobLock.acquire()
         try:
@@ -96,8 +99,10 @@ class ThreadPool(dict):
             self.jobLock.release()
         return idle
 
+
 class Thread(threading.Thread):
     timeout = None
+
     def __init__(self, pool):
         threading.Thread.__init__(self)
         self.pool = pool
@@ -150,10 +155,12 @@ class Thread(threading.Thread):
     def starve(self):
         pass
 
+
 def catch_signals():
     import signal
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
+
 
 def sig_handler(signalnum, stack):
         import signal
@@ -165,10 +172,12 @@ def sig_handler(signalnum, stack):
         if signalnum == signal.SIGTERM:
                 raise SystemExit
 
+
 def terminate():
     # Maybe not a good idea, will also kill child processes
     import signal
     os.kill(0, signal.SIGTERM)
+
 
 if __name__ == '__main__':
     import time
@@ -193,4 +202,3 @@ if __name__ == '__main__':
 
     for thread in pool.threads:
         thread.exit()
-

@@ -14,6 +14,7 @@ __version__ = '$Id: mysql_autoconnection.py 7588 2009-11-03 20:36:09Z btongminh 
 import MySQLdb, MySQLdb.cursors
 import time
 
+
 class Connection(object):
     """A wrapper to the MySQLdb database and cursor object.
     MySQL does not support cursors, so they can be safely wrapped
@@ -51,6 +52,7 @@ class Connection(object):
             self.callback(self)
         time.sleep(self.current_retry * self.retry_timeout)
         self.current_retry += 1
+
     def __call(self, (object, function_name), *args, **kwargs):
         try:
             return getattr(object, function_name)(*args, **kwargs)
@@ -97,6 +99,7 @@ class Connection(object):
     # Mimic cursor object
     def __iter__(self):
         return self.__cursor.__iter__()
+
     def __getattr__(self, name, *args, **kwargs):
         if hasattr(self.database, name):
             obj = self.database
@@ -109,14 +112,18 @@ class Connection(object):
 
 
 class CallWrapper(object):
+
     def __init__(self, executor, function):
         self.__executor = executor
         self.__function = function
+
     def __call__(self, *args, **kwargs):
         return self.__executor(self.__function,
             *args, **kwargs)
+
     def __getattr__(self, name):
         getattr(self.__function, name)
+
 
 def connect(retry_timeout = 60, max_retries = -1,
     callback = lambda *args: None, *conn_args, **conn_kwargs):
@@ -125,6 +132,7 @@ def connect(retry_timeout = 60, max_retries = -1,
         max_retries = max_retries,
         callback = callback,
         *conn_args, **conn_kwargs)
+
 
 if __name__ == '__main__':
     def callback(conn):
@@ -159,6 +167,3 @@ if __name__ == '__main__':
     print conn.fetchall()
     print 'Query ok!'
     raw_input()
-
-
-

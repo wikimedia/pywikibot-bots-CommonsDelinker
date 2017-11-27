@@ -54,15 +54,19 @@ import checkusage
 # FIXME: They should be defined *somewhere* in the Python library, not?
 WHITESPACE = u' \r\n\t\u200e\u200f\u202a\u202a\u202b\u202c\u202d\u202e'
 
+
 def wait_callback(object):
     output(u'%s Connection has been lost in %s. Attempting reconnection.' % (threading.currentThread(), repr(object)), False)
     if hasattr(object, 'error'):
         output(u'Error was %s: %s' % tuple(object.error))
 
+
 def universal_unicode(s):
     if type(s) is str:
         return s.decode('utf-8', 'ignore')
     return unicode(s)
+
+
 def connect_database():
     engine = config.CommonsDelinker['sql_engine']
     kwargs = config.CommonsDelinker['sql_config'].copy()
@@ -83,19 +87,26 @@ def connect_database():
     # TODO: Add support for sqlite3
     raise RuntimeError('Unsupported database engine %s' % engine)
 
+
 class ImmutableByReference(object):
     def __init__(self, data):
         self.data = data
+
     def set(self, value):
         self.data = value
+
     def get(self):
         return self.data
+
     def __str__(self):
         return str(self.data)
+
     def __unicode__(self):
         return unicode(self.data)
+
     def __int__(self):
         return int(self.data)
+
 
 class Delinker(threadpool.Thread):
     # TODO: Method names could use some clean up
@@ -197,6 +208,7 @@ class Delinker(threadpool.Thread):
             def create_regex(s):
                 first, other = re.escape(s[0]), re.escape(s[1:])
                 return ur'(?:[%s%s]%s)' % (first.upper(), first.lower(), other)
+
             def create_regex_i(s):
                 return ur'(?:%s)' % u''.join([u'[%s%s]' % (c.upper(), c.lower()) for c in s])
 
@@ -281,9 +293,11 @@ class Delinker(threadpool.Thread):
             r_galleries = ur'(?s)(\<%s\>)(.*?)(\<\/%s\>)' % (create_regex_i('gallery'),
                 create_regex_i('gallery'))
             r_gallery = ur'(?m)^((?:%s)?)%s(\s*(?:\|.*?)?\s*$)' % (r_namespace, r_image)
+
             def gallery_replacer(match):
                 return ur'%s%s%s' % (match.group(1), re.sub(r_gallery,
                     simple_replacer, match.group(2)), match.group(3))
+
             new_text = re.sub(r_galleries, gallery_replacer, new_text)
 
             if text == new_text or self.CommonsDelinker.config.get('force_complex', False):
@@ -335,8 +349,6 @@ class Delinker(threadpool.Thread):
                 return 'skipped'
         return 'skipped'
 
-
-
     def do(self, args):
         try:
             self.delink_image(*args)
@@ -365,6 +377,7 @@ class Delinker(threadpool.Thread):
             tlp = tlp.replace('$3', unicode(reason))
 
         return tlp
+
 
 class SummaryCache(object):
     """ Object to thread-safe cache summary templates. """
@@ -457,8 +470,10 @@ class SummaryCache(object):
             # User page is protected, continue anyway
             pass
 
+
 class CheckUsage(threadpool.Thread):
     timeout = 120
+
     def __init__(self, pool, CommonsDelinker):
         threadpool.Thread.__init__(self, pool)
         self.CommonsDelinker = CommonsDelinker
@@ -487,7 +502,6 @@ class CheckUsage(threadpool.Thread):
             self.CheckUsage = checkusage.CheckUsage(sys.maxint,
                 http_callback = wait_callback, no_db = True)
 
-
     def check_usage(self, image, timestamp, admin, reason, replacement):
         """ Check whether this image needs to be delinked. """
 
@@ -509,7 +523,6 @@ class CheckUsage(threadpool.Thread):
                 not bool(replacement):
             output(u'%s %s exists again!' % (self, image))
             return
-
 
         if self.CommonsDelinker.config['global']:
             if self.CommonsDelinker.config['global'] == 'live':
@@ -565,6 +578,7 @@ class CheckUsage(threadpool.Thread):
         finally:
             self.pool.jobLock.release()
 
+
 class Logger(threadpool.Thread):
     timeout = 360
 
@@ -582,7 +596,6 @@ class Logger(threadpool.Thread):
         output(u'%s Connecting to log database' % self)
         self.database = connect_database()
         self.cursor = self.database.cursor()
-
 
     def log_result_legacy(self, timestamp, image, domain, namespace, page, status = "ok", newimage = None):
         # TODO: Make sqlite3 ready
@@ -761,6 +774,7 @@ class CommonsDelinker(object):
             self.edit_list.append((domain, page))
         self.editLock.release()
         return being_editted
+
     def unset_edit(self, domain, page):
         """ Done editting. """
         self.editLock.acquire()
@@ -788,6 +802,7 @@ class CommonsDelinker(object):
             return site
         finally:
             self.siteLock.release()
+
     def unlock_site(self, site):
         key = '%s:%s' % (site.lang, site.family.name)
         self.siteLock.acquire()
@@ -795,7 +810,6 @@ class CommonsDelinker(object):
             self.sites[key][self.sites[key].index((site, True))] = (site, False)
         finally:
             self.siteLock.release()
-
 
     def read_deletion_log(self):
         ts_format = '%Y-%m-%dT%H:%M:%SZ'
@@ -856,7 +870,6 @@ class CommonsDelinker(object):
             FROM %s WHERE status = 'pending'""" % self.config['replacer_table'])
         result = ([universal_unicode(s) for s in i] for i in self.cursor.fetchall())
 
-
         for id, timestamp, old_image, new_image, user, comment in result:
             self.CheckUsages.append((old_image, timestamp, user, comment, new_image))
             output(u'Replacing %s by %s'  % (old_image, new_image))
@@ -911,7 +924,6 @@ class CommonsDelinker(object):
             open(self.config['deletion_log_store'], 'w').write(str(self.last_check))
             output(u'Storing session end at %i' % self.last_check)
 
-
     def thread_died(self):
         # Obsolete
         return
@@ -920,6 +932,7 @@ class CommonsDelinker(object):
     def output(*args):
         return output(*args)
 
+
 def output(message, toStdout=True):
     message = time.strftime('[%Y-%m-%d %H:%M:%S] ') + message
     pywikibot.output(message, toStdout=toStdout)
@@ -927,6 +940,7 @@ def output(message, toStdout=True):
         sys.stdout.flush()
     else:
         sys.stderr.flush()
+
 
 def main():
     global CD
@@ -971,5 +985,6 @@ def main():
         sys.stdout.flush()
         sys.stderr.flush()
 
-if __name__ == '__main__': main()
 
+if __name__ == '__main__':
+    main()
