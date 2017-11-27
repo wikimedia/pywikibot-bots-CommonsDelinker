@@ -33,7 +33,8 @@ class DummyReplacement(object):
 
             for new_image, categories in dummyreplacements:
                 for category in categories.split('\n'):
-                    if category.strip() == '': continue
+                    if category.strip() == '':
+                        continue
 
                     r_cat = r'\[\[\s*%s\s*\:\s*%s\s*(?:\|.*?)?\s*\]\]' % (r_namespace,
                         re.sub(r'\\[ _]', '[ _]', re.escape(category.strip())))
@@ -55,7 +56,8 @@ class DummyReplacement(object):
 
             for new_image, categories in dummyreplacements:
                 for category in categories.split('\n'):
-                    if category.strip() == '': continue
+                    if category.strip() == '':
+                        continue
 
                     r_cat = r'\[\[\s*%s\s*\:\s*%s\s*(?:\|.*?)?\s*\]\]' % (r_namespace,
                         re.sub(r'\\[ _]', '[ _]', re.escape(category.strip())))

@@ -127,7 +127,8 @@ class Replacer(object):
         remove_from_list = []
         count = 0
         for replacement in replacements:
-            if count == self.config.get('replacer_rate_limit', -1): break
+            if count == self.config.get('replacer_rate_limit', -1):
+                break
             # Find out who's to blame
             res = self.examine_revision_history(
                 revisions, replacement, username)
@@ -225,7 +226,8 @@ class Replacer(object):
             not_ok = [(wiki, namespace, page_title.decode('utf-8', 'ignore'))
                 for wiki, namespace, page_title in self.cursor]
 
-            if not comment: comment = ''
+            if not comment:
+                comment = ''
 
             self.reporters.append((old_image.decode('utf-8', 'ignore'),
                 new_image.decode('utf-8', 'ignore'),
@@ -337,4 +339,5 @@ def main():
         pywikibot.stopme()
 
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    main()

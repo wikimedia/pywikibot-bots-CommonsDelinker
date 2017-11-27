@@ -256,7 +256,8 @@ class Delinker(threadpool.Thread):
                 current_link_ends = [link_end for link_end in link_ends
                     if link_end > image_start]
                 end = image_start
-                if current_link_ends: end = current_link_ends[0]
+                if current_link_ends:
+                    end = current_link_ends[0]
 
                 while current_link_starts and current_link_ends:
                     start = current_link_starts.pop(0)
@@ -286,7 +287,8 @@ class Delinker(threadpool.Thread):
 
             # Perform the replacements
             for old, new in replacements:
-                if old: new_text = new_text.replace(old, new)
+                if old:
+                    new_text = new_text.replace(old, new)
 
             # Remove the image from galleries
             hook = 'gallery'
@@ -427,7 +429,8 @@ class SummaryCache(object):
         # like mediawiki.org and meta and species.
         output(u'%s Using default summary for %s' % (self, site))
 
-        if default: return default
+        if default:
+            return default
 
         if site.family.name != 'wikipedia' and self.CommonsDelinker.config['global']:
             if site.family.name in ('wiktionary', 'wikibooks', 'wikiquote',
@@ -568,7 +571,8 @@ class CheckUsage(threadpool.Thread):
     def starve(self):
         self.pool.jobLock.acquire()
         try:
-            if self.pool[id(self)].isSet(): return False
+            if self.pool[id(self)].isSet():
+                return False
 
             output(u'%s Starving' % self)
             self.CheckUsage.close()
@@ -638,7 +642,8 @@ class Logger(threadpool.Thread):
         self.database.commit()
 
     def do(self, args):
-        if not self.enabled: return
+        if not self.enabled:
+            return
         try:
             if len(args) == 3:
                 self.log_replacement(*args)
@@ -657,7 +662,8 @@ class Logger(threadpool.Thread):
     def starve(self):
         self.pool.jobLock.acquire()
         try:
-            if self.pool[id(self)].isSet(): return False
+            if self.pool[id(self)].isSet():
+                return False
 
             output(u'%s Starving' % self)
             self.database.close()
@@ -724,7 +730,8 @@ class CommonsDelinker(object):
             mname, name = item.split('.', 1)
             __import__('plugins.' + mname)
             module = getattr(plugins, mname)
-            if do_reload: module = reload(module)
+            if do_reload:
+                module = reload(module)
             plugin = getattr(module, name)
             if type(plugin) is type:
                 plugin = plugin(self)
@@ -790,7 +797,8 @@ class CommonsDelinker(object):
             if key not in self.sites:
                 self.sites[key] = []
             for site, used in self.sites[key]:
-                if not site: return False
+                if not site:
+                    return False
                 if not used:
                     self.sites[key][self.sites[key].index((site, False))] = (site, True)
                     return site
@@ -836,7 +844,8 @@ class CommonsDelinker(object):
                 ledir = 'newer')
             logevents = result['query']['logevents']
         except Exception, e:
-            if type(e) in (SystemError, KeyboardInterrupt): raise
+            if type(e) in (SystemError, KeyboardInterrupt):
+                raise
             # Something happened, but since it is a network error,
             # it will not be critical. In order to prevent data loss
             # the last_check timestamp has to be set correctly.

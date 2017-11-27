@@ -133,7 +133,8 @@ class Thread(threading.Thread):
                 event.clear()
                 event.wait(self.timeout)
                 if not event.isSet() and self.timeout != None:
-                    if self.starve(): return
+                    if self.starve():
+                        return
                 continue
             job = self.pool.jobQueue.pop(0)
             self.is_idle = False

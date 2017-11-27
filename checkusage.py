@@ -105,8 +105,10 @@ class HTTP(object):
         self._conn.connect()
 
     def request(self, method, path, headers, data):
-        if not headers: headers = {}
-        if not data: data = ''
+        if not headers:
+            headers = {}
+        if not data:
+            data = ''
         headers['Connection'] = 'Keep-Alive'
         headers['User-Agent'] = 'MwClient/' + __ver__
 
@@ -243,11 +245,13 @@ class CheckUsage(object):
         self.http_max_retries = http_max_retries
         self.http_callback = http_callback
 
-        if no_db: return
+        if no_db:
+            return
 
         self.mysql_host_prefix = mysql_host_prefix
         self.mysql_kwargs = mysql_kwargs.copy() # To be safe
-        if 'host' in self.mysql_kwargs: del self.mysql_kwargs['host']
+        if 'host' in self.mysql_kwargs:
+            del self.mysql_kwargs['host']
         self.use_autoconn = use_autoconn
         self.mysql_retry_timeout = mysql_retry_timeout
         self.mysql_max_retries = mysql_max_retries
@@ -328,9 +332,11 @@ class CheckUsage(object):
         if family.shared_image_repository(lang) != (lang, family_name) and shared:
             left_join = 'LEFT JOIN %s.image ON (il_to = img_name) WHERE img_name IS NULL AND' % dbname
         else:
-            left_join = 'WHERE';
+            left_join = 'WHERE'
+
         query = """SELECT page_namespace, page_title FROM %s.page, %s.imagelinks
     %s page_id = il_from AND il_to = %%s"""
+
         self.databases[dbname][1].execute(query % (dbname, dbname, left_join),
             (image.encode('utf-8', 'ignore'), ))
         for page_namespace, page_title in self.databases[dbname][1]:
@@ -400,7 +406,8 @@ class CheckUsage(object):
             return
 
         usages = res['query'].get('imageusage')
-        if not usages: return
+        if not usages:
+            return
 
         # Apparently this someday changed from dict to list?
         if type(usages) is dict:
@@ -429,7 +436,8 @@ class CheckUsage(object):
     def close(self):
         if getattr(self, 'http'):
             self.http.close()
-        if not hasattr(self, 'databases'): return
+        if not hasattr(self, 'databases'):
+            return
         for connection, cursor in self.databases.itervalues():
             try:
                 connection.close()
